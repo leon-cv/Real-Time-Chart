@@ -1,0 +1,148 @@
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - websocket_network
+    depends_on:
+      - chart
+      - trade_data_ws
+
+  pulsar:
+    image: apachepulsar/pulsar:3.1.1
+    expose:
+      - "6650"
+      - "8080"
+    command: >
+      /bin/bash -c "
+      rm -rf /pulsar/data/bookkeeper/* &&
+      bin/apply-config-from-env.py conf/standalone.conf && 
+      bin/pulsar standalone"
+    env_file:
+      - setup/environments/.env.pulsar
+    volumes:
+      - pulsar_data:/pulsar/data
+      - pulsar_conf:/pulsar/conf
+    networks:
+      - pulsar_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    expose:
+      - "8123"
+      - "9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    env_file:
+      - setup/environments/.env.clickhouse
+    networks:
+      - clickhouse_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  data_collector:
+    build:
+      context: ./src/backend/data_collector
+      dockerfile: Dockerfile
+    command: /app/data_collector
+    depends_on:
+      - pulsar
+    restart: unless-stopped
+    env_file:
+      - setup/environments/.env.data_collector
+    networks:
+      - pulsar_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  ohlc_aggregator:
+    build:
+      context: ./src/backend/ohlc_aggregator
+      dockerfile: Dockerfile
+    command: python -m src.main
+    volumes:
+      - ./src/backend/ohlc_aggregator:/app
+    depends_on:
+      - pulsar
+      - clickhouse
+    restart: unless-stopped
+    env_file:
+      - setup/environments/.env.ohlc_aggregator
+    networks:
+      - pulsar_network
+      - clickhouse_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  trade_data_ws:
+    build:
+      context: ./src/backend/trade_data_ws
+      dockerfile: Dockerfile
+    command: python -m src.main
+    expose:
+      - "8765"
+    volumes:
+      - ./src/backend/trade_data_ws:/app
+    depends_on:
+      - pulsar
+    restart: unless-stopped
+    env_file:
+      - setup/environments/.env.trade_data_ws
+    networks:
+      - pulsar_network
+      - websocket_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  chart:
+    build:
+      context: ./src/frontend/chart
+      dockerfile: Dockerfile
+    command: bun run dev -- --host 0.0.0.0
+    expose:
+      - "3000"
+    volumes:
+      - ./src/frontend/chart:/app
+      - /app/node_modules
+    env_file:
+      - setup/environments/.env.chart
+    networks:
+      - clickhouse_network
+      - websocket_network
+    depends_on:
+      - clickhouse
+
+volumes:
+  pulsar_data:
+  pulsar_conf:
+  clickhouse_data:
+
+networks:
+  pulsar_network:
+    driver: bridge
+  clickhouse_network:
+    driver: bridge
+  websocket_network:
+    driver: bridge

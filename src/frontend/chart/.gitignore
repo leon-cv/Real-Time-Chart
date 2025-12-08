@@ -1,0 +1,33 @@
+# Local
+.DS_Store
+*.local
+*.log*
+
+# Dist
+node_modules
+dist/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+txt
+
+package-lock.json
+bun.lock
+
+!.env
+.cache
+.output
+.nitro
+/build/
+/api/
+/server/build
+/public/build# Sentry Config File
+.env.sentry-build-plugin
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+.tanstack
