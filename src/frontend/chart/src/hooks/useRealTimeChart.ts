@@ -1,35 +1,20 @@
 import { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { createChart, IChartApi, ISeriesApi, UTCTimestamp } from 'lightweight-charts';
 import {
+    Bar,
     CandlestickData,
     SymbolDataMessage,
     TimeUnit,
     Timeframe,
     getTimeframeInSeconds
 } from '~/shared/types';
+import { normalizeToSeconds } from '~/shared/utils';
 import { WebSocketService } from '~/services/WebSocketService';
 import { CANDLESTICK_CONFIG, CHART_CONFIG } from '~/components/Chart/constants';
 import { CandlestickManager } from "~/managers/CandlestickManager";
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { fetchChartData, fetchFormingCandle } from '~/server/chart';
 import { useSuspenseQuery } from '@tanstack/react-query';
-
-function normalizeToSeconds(ts: number | string): number {
-    const n = typeof ts === "string" ? Number(ts) : ts;
-    if (n > 1e12) return Math.floor(n / 1000);
-    return Math.floor(n);
-}
-
-interface Bar {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
-    vbuy?: number;
-    vsell?: number;
-}
 
 export function useRealTimeChart({ wsUrl }: { wsUrl: string }) {
     const search = useSearch({ from: '/' });

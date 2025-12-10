@@ -32,6 +32,17 @@ export interface SymbolDataMessage {
     ohlc: CandlestickData;
 }
 
+export interface Bar {
+    time: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume?: number;
+    vbuy?: number;
+    vsell?: number;
+}
+
 const TIMEFRAME_MULTIPLIERS: Record<TimeUnit, number> = {
     second: 1,
     minute: 60,

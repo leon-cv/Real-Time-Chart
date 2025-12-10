@@ -1,21 +1,5 @@
-import { CandlestickData } from "~/shared/types";
-
-function normalizeToSeconds(ts: number | string): number {
-    const n = typeof ts === "string" ? Number(ts) : ts;
-    if (n > 1e12) return Math.floor(n / 1000);
-    return Math.floor(n);
-}
-
-interface Bar {
-    time: number;
-    open: number;
-    high: number;
-    low: number;
-    close: number;
-    volume?: number;
-    vbuy?: number;
-    vsell?: number;
-}
+import { Bar, CandlestickData } from "~/shared/types";
+import { normalizeToSeconds } from '~/shared/utils';
 
 interface Trade {
     timestamp: number;

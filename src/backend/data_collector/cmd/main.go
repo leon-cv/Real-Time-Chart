@@ -14,7 +14,6 @@ func main() {
 
 	config := collector.LoadConfig()
 
-	// Initialize Pulsar Client
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL:               config.PulsarServiceURL,
 		OperationTimeout:  30 * time.Second,
@@ -27,9 +26,7 @@ func main() {
 
 	log.Println("Pulsar client initializing...")
 
-	// Start Trade Stream
 	tradesCh := collector.TradeStream(config)
 
-	// Start Publishing
 	collector.StartPublishing(client, config.OutputTopic, tradesCh)
 }
